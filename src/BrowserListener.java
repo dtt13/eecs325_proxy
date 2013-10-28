@@ -18,6 +18,7 @@ public class BrowserListener {
 				new Thread(browser).start();
 			}
 		} catch (IOException e) {
+			System.err.println("Error with welcome socket");
 			System.err.println(e.getMessage());
 		}
 	}

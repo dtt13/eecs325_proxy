@@ -28,9 +28,13 @@ public class WebReader implements Runnable {
 				output.write(readVal);
 			}
 		} catch (IOException e) {
+			System.err.println("Error writing response to browser");
 			System.err.println(e.getMessage());
-		}
-		System.out.println("WebReader is finished");
+			System.err.flush();
+		}/* finally {
+			webSocket.close();
+		}*/ //TODO close the web socket
+//		System.out.println("WebReader is finished");
 	}
 
 }
