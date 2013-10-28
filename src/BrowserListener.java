@@ -13,9 +13,7 @@ public class BrowserListener {
 			ServerSocket welcomeSocket = new ServerSocket(portNumber);
 			// accept each request as it comes and spawn a new thread
 			while(true) {
-//				System.out.println("Waiting for a knock...");
 				Socket clientSocket = welcomeSocket.accept();
-//				System.out.println("Knock has been heard!...");
 				BrowserReader browser = new BrowserReader(clientSocket);
 				new Thread(browser).start();
 			}

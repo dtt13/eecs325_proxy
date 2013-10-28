@@ -9,14 +9,20 @@ import java.nio.ByteBuffer;
 public class BrowserReader implements Runnable {
 	private final int EOF = -1;
 	private final int HTTP_PORT = 80;
-	private final int BUFFER_SIZE = 8*1024;
+	private final int BUFFER_SIZE = 1024;
 	
 	private Socket browserSocket;
-	private Socket webSocket;
+//	private Socket webSocket;
+	private RequestState requestState;
+	
+	private enum RequestState {
+		CR1,LF1,CR2, WAIT
+	};
 	
 	public BrowserReader(Socket browserSocket) {
 		this.browserSocket = browserSocket;
-		this.webSocket = null;
+//		this.webSocket = null;
+		this.requestState = RequestState.WAIT;
 	}
 	
 	@Override
@@ -27,56 +33,66 @@ public class BrowserReader implements Runnable {
 		try {
 			// create input stream from browser
 			InputStream input = browserSocket.getInputStream();
-//			ByteBuffer inputBuffer = ByteBuffer.allocate(BUFFER_SIZE);
-//			byte[] inputBuffer = new byte[input.available()];
-			// create output stream to the web
-			String host = "stackoverflow.com";
-			webSocket = new Socket(host, HTTP_PORT);
-			OutputStream output = webSocket.getOutputStream();
-			WebReader webReader = new WebReader(browserSocket, webSocket);
-			new Thread(webReader).start();
+			ByteBuffer inputBuffer = ByteBuffer.allocate(BUFFER_SIZE);
 			// transfer data
 			int readVal;
 			while((readVal = input.read()) != EOF) {
-				System.out.print((char)readVal);
-				output.write(readVal);
-//				inputBuffer.put((byte)readVal);
+//				System.out.print((char)readVal);
+				inputBuffer.put((byte)readVal);
+				if(isEndOfRequest((char)readVal)) {
+					HttpRequest hRequest = new HttpRequest(inputBuffer.array(), ip.getHostAddress());
+					System.out.print(hRequest);
+					System.out.flush();
+					inputBuffer.clear();
+					// create output stream to the web
+					Socket webSocket = new Socket(hRequest.getHostname(), HTTP_PORT);
+					WebReader webReader = new WebReader(browserSocket, webSocket);
+					new Thread(webReader).start();
+					OutputStream output = webSocket.getOutputStream();
+					output.write(hRequest.toByteArray());
+				}
 			}
-//			System.out.println("End of File reached");
-//			String host = findHostname(inputBuffer);
 		} catch (IOException e) {
 			System.err.println(e.getMessage());
 		}
 		System.out.println("BrowserReader is finished");
 	}
-//
-//	private String findHostname(ByteBuffer inputBuffer) {
-//		System.out.print(inputBuffer.toString());
-//		return "";
-//	}
-//
-//	private void printBuffer(byte[] buffer) {
-//		int byteCount = 0;
-//		boolean newLineFlag = false;
-//		BYTE_LOOP:
-//		for(byte b : buffer) {
-//			if(b != '\0') { //not the end
-//				System.out.print((char)b);
-//				byteCount++;
-//				if(b == '\n') {
-//					if(newLineFlag) {
-//						break BYTE_LOOP;
-//					}
-//					newLineFlag = true;
-//				} else {
-//					newLineFlag = false;
-//				}
-//			} else {
-//				break BYTE_LOOP;
-//			}
-//		}
-//		System.out.println("Byte Count: " + byteCount);
-//	}
-//	
 	
+	/**
+	 * Determines whether the end of a HTTP request has been reached by identifying
+	 * a double CRLF.
+	 * 
+	 * @param nextChar - the next character from the input stream
+	 * @return true if end of request; false otherwise
+	 */
+	private boolean isEndOfRequest(char nextChar) {
+		switch(requestState) {
+		case WAIT:
+			if(nextChar == '\r') {
+				requestState = RequestState.CR1;
+			}
+			break;
+		case CR1:
+			if(nextChar == '\n') {
+				requestState = RequestState.LF1;
+			} else {
+				requestState = RequestState.WAIT;
+			}
+			break;
+		case LF1:
+			if(nextChar == '\r') {
+				requestState = RequestState.CR2;
+			} else {
+				requestState = RequestState.WAIT;
+			}
+			break;
+		case CR2:
+			requestState = RequestState.WAIT;
+			if(nextChar == '\n') {
+				return true;
+			}
+			break;
+		}
+		return false;
+	}
 }
