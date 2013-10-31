@@ -37,15 +37,11 @@ public class BrowserReader implements Runnable {
 			// transfer data
 			int readVal;
 			while((readVal = input.read()) != EOF) {
-//				System.out.print((char)readVal);
 				inputBuffer.put((byte)readVal);
 				if(isEndOfRequest((char)readVal)) {
 					HttpRequest hRequest = new HttpRequest(inputBuffer, ip.getHostAddress());
-//					System.out.println("buffer: " + inputBuffer.array().length + "  written: " + hRequest.toByteArray().length);
-//					System.out.print(hRequest);
-//					System.out.println(hRequest.toString().length());
-//					System.out.flush();
-//					inputBuffer.clear();
+					System.out.print(hRequest);
+					System.out.flush();
 					// create output stream to the web
 					Socket webSocket = new Socket(hRequest.getHostname(), HTTP_PORT);
 					WebReader webReader = new WebReader(browserSocket, webSocket);
@@ -59,11 +55,11 @@ public class BrowserReader implements Runnable {
 			System.err.println(e.getMessage());
 			System.err.flush();
 		} catch (BufferOverflowException e) {
-			System.err.println(new String(inputBuffer.array()));
+			System.err.println(e.getMessage());
 			System.err.flush();
 		}
-		System.out.println("BrowserReader is finished");
-		System.out.flush();
+//		System.out.println("BrowserReader is finished");
+//		System.out.flush();
 	}
 	
 	/**
