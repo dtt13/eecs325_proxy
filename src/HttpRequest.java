@@ -1,6 +1,11 @@
 import java.nio.ByteBuffer;
 
-
+/**
+ * Represents a HTTP request message; targeted for proxy applications by altering
+ * and adding proxy-specific header fields to the HTTP request.
+ * 
+ * @author Derrick Tilsner dtt13
+ */
 public class HttpRequest {
 	// private class variables
 	private final int INVALID_INDEX = -1; 
@@ -23,16 +28,24 @@ public class HttpRequest {
 		}
 	}
 	
-	public HttpRequest(ByteBuffer byteStream, String ipAddress) {
+	/**
+	 * Constructor of the HttpRequest class that reads a single request from
+	 * the byte buffer and adds the appropriate header fields for a proxy
+	 * application.
+	 * 
+	 * @param byteBuffer - byte buffer containing a single HTTP request
+	 * @param ipAddress - IP address of the browser's host
+	 */
+	public HttpRequest(ByteBuffer byteBuffer, String ipAddress) {
 		// read in byte buffer as String
-		byteStream.flip();
+		byteBuffer.flip();
 		StringBuilder builder = new StringBuilder();
-		while(byteStream.hasRemaining()) {
-			byte nextByte = byteStream.get();
+		while(byteBuffer.hasRemaining()) {
+			byte nextByte = byteBuffer.get();
 			builder.append((char)nextByte);
 		}
-		byteStream.flip();
-		byteStream.clear();
+		byteBuffer.flip();
+		byteBuffer.clear();
 		request = builder.toString();
 		// append new header fields
 		addHeaderField(HeaderField.CONNECTION_HEADER, "closed");
@@ -41,6 +54,11 @@ public class HttpRequest {
 //		addVia();
 	}
 	
+	/**
+	 * Finds the hostname corresponding to the HTTP request.
+	 * 
+	 * @return a String containing the value of the Host header field
+	 */
 	public String getHostname() {
 		String hostHeaderString = HeaderField.HOST_HEADER.getHeaderString();
 		int start = request.indexOf(hostHeaderString);
@@ -65,6 +83,13 @@ public class HttpRequest {
 		return request;
 	}
 	
+	/**
+	 * Adds a header field to the HTTP request with a specified value. If the
+	 * header field is already in use, the value is replaced.
+	 * 
+	 * @param header - the header field
+	 * @param value - the value corresponding to the header field
+	 */
 	private void addHeaderField(HeaderField header, String value) {
 		// find the start of the header field
 		StringBuilder builder = new StringBuilder();
@@ -88,6 +113,11 @@ public class HttpRequest {
 		request = builder.toString();
 	}
 	
+	/**
+	 * Removes a header field from the HTTP request if it exists.
+	 * 
+	 * @param header - the header field to be removed
+	 */
 	private void removeHeaderField(HeaderField header) {
 		int start = getStartOfHeaderField(header);
 		if(start != INVALID_INDEX) {
@@ -99,6 +129,12 @@ public class HttpRequest {
 		}	
 	}
 	
+	/**
+	 * Finds a place to insert another header field. The index returned
+	 * will be the field directly following the Host header field.
+	 * 
+	 * @return the index of new header field
+	 */
 	private int getNewHeaderFieldIndex() {
 		// find host header field
 		int index = getStartOfHeaderField(HeaderField.HOST_HEADER);
@@ -114,6 +150,13 @@ public class HttpRequest {
 		return index + 1;
 	}
 	
+	/**
+	 * Finds a header field in the request message if it exists.
+	 * 
+	 * @param header - the header field to find
+	 * @return the starting index of the header field; -1 if the field doesn't
+	 * exist
+	 */
 	private int getStartOfHeaderField(HeaderField header) {
 		int index = 0;
 		while(true) {
@@ -125,5 +168,4 @@ public class HttpRequest {
 			}
 		}
 	}
-	
 }

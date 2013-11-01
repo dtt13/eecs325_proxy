@@ -6,7 +6,12 @@ import java.net.Socket;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 
-
+/**
+ * Reads requests coming from the browser and creates new sockets to the
+ * web server to handle these requests.
+ * 
+ * @author Derrick Tilsner dtt13
+ */
 public class BrowserReader implements Runnable {
 	private final int EOF = -1;
 	private final int HTTP_PORT = 80;
@@ -26,9 +31,8 @@ public class BrowserReader implements Runnable {
 	
 	@Override
 	public void run() {
-//		System.out.println("New thread created!");
 		InetAddress ip = browserSocket.getInetAddress();
-		System.out.println("IP: " + ip.getHostAddress() + " port: " + browserSocket.getPort());
+		System.out.println("Request from " + ip.getHostAddress() + ":" + browserSocket.getPort());
 		ByteBuffer inputBuffer = null;
 		try {
 			// create input stream from browser
@@ -40,8 +44,6 @@ public class BrowserReader implements Runnable {
 				inputBuffer.put((byte)readVal);
 				if(isEndOfRequest((char)readVal)) {
 					HttpRequest hRequest = new HttpRequest(inputBuffer, ip.getHostAddress());
-					System.out.print(hRequest);
-					System.out.flush();
 					// create output stream to the web
 					Socket webSocket = new Socket(hRequest.getHostname(), HTTP_PORT);
 					WebReader webReader = new WebReader(browserSocket, webSocket);
@@ -50,16 +52,15 @@ public class BrowserReader implements Runnable {
 					output.write(hRequest.toByteArray());
 				}
 			}
+			browserSocket.close();
 		} catch (IOException e) {
 			System.err.println("Error writing request to web server");
 			System.err.println(e.getMessage());
 			System.err.flush();
 		} catch (BufferOverflowException e) {
-			System.err.println(e.getMessage());
+			System.err.println("The HTTP request buffer overflowed");
 			System.err.flush();
 		}
-//		System.out.println("BrowserReader is finished");
-//		System.out.flush();
 	}
 	
 	/**

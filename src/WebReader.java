@@ -3,7 +3,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 
-
+/**
+ * Creates a pipeline from the web server's output stream to the browser's
+ * input stream. Transfers data byte-by-byte.
+ *  
+ * @author Derrick Tilsner dtt13
+ */
 public class WebReader implements Runnable {
 	private final int EOF = -1;
 	
@@ -24,17 +29,13 @@ public class WebReader implements Runnable {
 			// transfer data
 			int readVal;
 			while((readVal = input.read()) != EOF) {
-//				System.out.print((char)readVal);
 				output.write(readVal);
 			}
-		} catch (IOException e) {
-			System.err.println("Error writing response to browser");
-			System.err.println(e.getMessage());
-			System.err.flush();
-		}/* finally {
 			webSocket.close();
-		}*/ //TODO close the web socket
-//		System.out.println("WebReader is finished");
+		} catch (IOException e) {
+			// browser closed the connection prematurely
+			// no action needs to be taken
+		}
 	}
 
 }

@@ -2,7 +2,12 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-
+/**
+ * Instantiates a welcome socket for the proxy to listen on and create
+ * new threads to handle each TCP request.
+ * 
+ * @author Derrick Tilsner dtt13
+ */
 public class BrowserListener {
 	private static int portNumber = 5041;
 	
