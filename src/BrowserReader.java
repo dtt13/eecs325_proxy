@@ -3,6 +3,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 
@@ -15,7 +16,7 @@ import java.nio.ByteBuffer;
 public class BrowserReader implements Runnable {
 	private final int EOF = -1;
 	private final int HTTP_PORT = 80;
-	private final int BUFFER_SIZE = 8*1024;
+	private final int BUFFER_SIZE = 16*1024;
 	
 	private Socket browserSocket;
 	private RequestState requestState;
@@ -31,8 +32,14 @@ public class BrowserReader implements Runnable {
 	
 	@Override
 	public void run() {
-		InetAddress ip = browserSocket.getInetAddress();
-		System.out.println("Request from " + ip.getHostAddress() + ":" + browserSocket.getPort());
+		InetAddress clientIP = browserSocket.getInetAddress();
+		String proxyHostname = null;
+		try {
+			proxyHostname = InetAddress.getLocalHost().getHostName();
+		} catch(UnknownHostException e) {
+			System.err.println("Cannot determine hostname of proxy");
+		}
+		System.out.println("Request from " + clientIP.getHostAddress() + ":" + browserSocket.getPort());
 		ByteBuffer inputBuffer = null;
 		try {
 			// create input stream from browser
@@ -43,7 +50,8 @@ public class BrowserReader implements Runnable {
 			while((readVal = input.read()) != EOF) {
 				inputBuffer.put((byte)readVal);
 				if(isEndOfRequest((char)readVal)) {
-					HttpRequest hRequest = new HttpRequest(inputBuffer, ip.getHostAddress());
+					HttpRequest hRequest = new HttpRequest(inputBuffer, clientIP.getHostAddress(), proxyHostname);
+					inputBuffer.clear();
 					// create output stream to the web
 					Socket webSocket = new Socket(hRequest.getHostname(), HTTP_PORT);
 					WebReader webReader = new WebReader(browserSocket, webSocket);
@@ -54,9 +62,8 @@ public class BrowserReader implements Runnable {
 			}
 			browserSocket.close();
 		} catch (IOException e) {
-			System.err.println("Error writing request to web server");
-			System.err.println(e.getMessage());
-			System.err.flush();
+			// browser initiated connection reset
+			// no action needs to be taken
 		} catch (BufferOverflowException e) {
 			System.err.println("The HTTP request buffer overflowed");
 			System.err.flush();
