@@ -15,8 +15,7 @@ public class HttpRequest {
 		HOST_HEADER("Host"),
 		CONNECTION_HEADER("Connection"),
 		X_FORWARDED_FOR_HEADER("X-Forwarded-For"),
-		PROXY_CONNECTION_HEADER("Proxy-Connection"),
-		VIA_HEADER("Via");
+		PROXY_CONNECTION_HEADER("Proxy-Connection");
 		
 		private String value;
 		
@@ -37,7 +36,7 @@ public class HttpRequest {
 	 * @param byteBuffer - byte buffer containing a single HTTP request
 	 * @param ipAddress - IP address of the browser's host
 	 */
-	public HttpRequest(ByteBuffer byteBuffer, String ipAddress, String proxyHostname) {
+	public HttpRequest(ByteBuffer byteBuffer, String ipAddress) {
 		// read in byte buffer as String
 		byteBuffer.flip();
 		StringBuilder builder = new StringBuilder();
@@ -50,7 +49,6 @@ public class HttpRequest {
 		// append new header fields
 		addHeaderField(HeaderField.CONNECTION_HEADER, "closed");
 		addHeaderField(HeaderField.X_FORWARDED_FOR_HEADER, ipAddress);
-//		addHeaderField(HeaderField.VIA_HEADER, getHttpVersion() + " " + proxyHostname);
 		removeHeaderField(HeaderField.PROXY_CONNECTION_HEADER);
 	}
 	
@@ -96,9 +94,9 @@ public class HttpRequest {
 	 * @param value - the value corresponding to the header field
 	 */
 	private void addHeaderField(HeaderField header, String value) {
-//		if(value == null) {
-//			return;
-//		}
+		if(value == null) {
+			return;
+		}
 		// find the start of the header field
 		StringBuilder builder = new StringBuilder();
 		int start = getStartOfHeaderField(header);
@@ -152,15 +150,11 @@ public class HttpRequest {
 				index++;
 			}
 		} else {
-			System.err.println("Could not process hostname");
+			System.err.println("Could not resolve hostname");
+			System.err.flush();
 			System.exit(1);
 		}
 		return index + 1;
-	}
-	
-	private String getHttpVersion() {
-		//TODO find token with http version
-		return "";
 	}
 	
 	/**

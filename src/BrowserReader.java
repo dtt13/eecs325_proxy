@@ -3,7 +3,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 
@@ -33,13 +32,7 @@ public class BrowserReader implements Runnable {
 	@Override
 	public void run() {
 		InetAddress clientIP = browserSocket.getInetAddress();
-		String proxyHostname = null;
-		try {
-			proxyHostname = InetAddress.getLocalHost().getHostName();
-		} catch(UnknownHostException e) {
-			System.err.println("Cannot determine hostname of proxy");
-		}
-		System.out.println("Request from " + clientIP.getHostAddress() + ":" + browserSocket.getPort());
+		System.out.println("Request from " + clientIP.getHostAddress() + " on port " + browserSocket.getPort());
 		ByteBuffer inputBuffer = null;
 		try {
 			// create input stream from browser
@@ -50,8 +43,10 @@ public class BrowserReader implements Runnable {
 			while((readVal = input.read()) != EOF) {
 				inputBuffer.put((byte)readVal);
 				if(isEndOfRequest((char)readVal)) {
-					HttpRequest hRequest = new HttpRequest(inputBuffer, clientIP.getHostAddress(), proxyHostname);
+					HttpRequest hRequest = new HttpRequest(inputBuffer, clientIP.getHostAddress());
 					inputBuffer.clear();
+					System.out.print(hRequest);
+					System.out.flush();
 					// create output stream to the web
 					Socket webSocket = new Socket(hRequest.getHostname(), HTTP_PORT);
 					WebReader webReader = new WebReader(browserSocket, webSocket);
