@@ -15,7 +15,8 @@ public class HttpRequest {
 		HOST_HEADER("Host"),
 		CONNECTION_HEADER("Connection"),
 		X_FORWARDED_FOR_HEADER("X-Forwarded-For"),
-		PROXY_CONNECTION_HEADER("Proxy-Connection");
+		PROXY_CONNECTION_HEADER("Proxy-Connection"),
+		VIA_HEADER("Via");
 		
 		private String value;
 		
@@ -36,7 +37,7 @@ public class HttpRequest {
 	 * @param byteBuffer - byte buffer containing a single HTTP request
 	 * @param ipAddress - IP address of the browser's host
 	 */
-	public HttpRequest(ByteBuffer byteBuffer, String ipAddress) {
+	public HttpRequest(ByteBuffer byteBuffer, String ipAddress, String proxyHostname) {
 		// read in byte buffer as String
 		byteBuffer.flip();
 		StringBuilder builder = new StringBuilder();
@@ -45,13 +46,12 @@ public class HttpRequest {
 			builder.append((char)nextByte);
 		}
 		byteBuffer.flip();
-		byteBuffer.clear();
 		request = builder.toString();
 		// append new header fields
 		addHeaderField(HeaderField.CONNECTION_HEADER, "closed");
 		addHeaderField(HeaderField.X_FORWARDED_FOR_HEADER, ipAddress);
+//		addHeaderField(HeaderField.VIA_HEADER, getHttpVersion() + " " + proxyHostname);
 		removeHeaderField(HeaderField.PROXY_CONNECTION_HEADER);
-//		addVia();
 	}
 	
 	/**
@@ -74,6 +74,11 @@ public class HttpRequest {
 		return request.substring(start, end);
 	}
 	
+	/**
+	 * Creates a byte array from the HTTP request String.
+	 * 
+	 * @return a byte array containing HTTP request data
+	 */
 	public byte[] toByteArray() {
 		return request.getBytes();
 	}
@@ -91,6 +96,9 @@ public class HttpRequest {
 	 * @param value - the value corresponding to the header field
 	 */
 	private void addHeaderField(HeaderField header, String value) {
+//		if(value == null) {
+//			return;
+//		}
 		// find the start of the header field
 		StringBuilder builder = new StringBuilder();
 		int start = getStartOfHeaderField(header);
@@ -148,6 +156,11 @@ public class HttpRequest {
 			System.exit(1);
 		}
 		return index + 1;
+	}
+	
+	private String getHttpVersion() {
+		//TODO find token with http version
+		return "";
 	}
 	
 	/**
